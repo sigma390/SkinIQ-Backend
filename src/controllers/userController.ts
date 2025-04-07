@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Multer } from 'multer';
 import { AuthRequest } from '../middleware/authMiddleware';
 import User from '../models/User';
 import { generateUserResponse } from '../utils/jwtUtils';
@@ -85,6 +86,59 @@ export const getUserProfile = async (
     } else {
       res.status(404).json({ message: 'User not found' });
     }
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: 'An unknown error occurred' });
+    }
+  }
+};
+
+// Extended AuthRequest interface to include file from multer
+interface FileAuthRequest extends AuthRequest {
+  file?: Express.Multer.File;
+}
+
+// @desc    Upload skin image
+// @route   POST /api/users/upload-image
+// @access  Private
+export const uploadSkinImage = async (
+  req: FileAuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ message: 'No image uploaded' });
+      return;
+    }
+
+    // Get the file path
+    const filePath = req.file.path;
+    const fileName = req.file.filename;
+
+    // Create the url (relative path for local storage)
+    const fileUrl = `/uploads/skin-images/${fileName}`;
+
+    // Update user's skin image in database
+    user.skinImage = {
+      url: fileUrl,
+      id: fileName,
+    };
+
+    await user.save();
+
+    res.status(200).json({
+      message: 'Image uploaded successfully',
+      skinImage: user.skinImage,
+    });
   } catch (error) {
     if (error instanceof Error) {
       res.status(500).json({ message: error.message });

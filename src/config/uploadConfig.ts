@@ -1,5 +1,6 @@
+import { Request } from 'express';
 import fs from 'fs';
-import multer from 'multer';
+import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 
 // Create uploads directory if it doesn't exist
@@ -17,10 +18,18 @@ if (!fs.existsSync(skinImagesDir)) {
 
 // Configure storage
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void
+  ) => {
     cb(null, skinImagesDir);
   },
-  filename: (req, file, cb) => {
+  filename: (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, filename: string) => void
+  ) => {
     // Create unique filename with original extension
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
@@ -30,9 +39,9 @@ const storage = multer.diskStorage({
 
 // File filter to only allow images
 const fileFilter = (
-  req: any,
+  req: Request,
   file: Express.Multer.File,
-  cb: multer.FileFilterCallback
+  cb: FileFilterCallback
 ) => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
